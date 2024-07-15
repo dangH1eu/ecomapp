@@ -10,6 +10,7 @@ import lombok.*;
 @Getter
 @Setter
 @ToString
+@Builder
 public class OrderDetail {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
