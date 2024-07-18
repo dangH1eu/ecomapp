@@ -3,6 +3,8 @@ package com.project.ecomapp.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.Date;
+
 @Entity
 @Table(name = "users")
 @AllArgsConstructor
@@ -32,7 +34,7 @@ public class User extends BaseModel {
     private boolean active;
 
     @Column(name = "date_of_birth")
-    private String dateOfBirth;
+    private Date dateOfBirth;
 
     @Column(name = "facebook_account_id")
     private int facebookAccountId;

@@ -21,7 +21,7 @@ public class Product extends BaseModel{
     @Column(name = "name", nullable = false, length = 350)
     private String name;
 
-    private String price;
+    private Float price;
 
     @Column(name = "thumbnail", length = 300)
     private String thumbnail;
@@ -31,7 +31,7 @@ public class Product extends BaseModel{
 
     @ManyToOne
     @JoinColumn(name = "category_id")
-    private Category categoryId;
+    private Category category;
 
 
 
