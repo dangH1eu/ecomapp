@@ -2,7 +2,9 @@ package com.project.ecomapp.controller;
 
 import com.project.ecomapp.dto.UserDTO;
 import com.project.ecomapp.dto.UserLoginDTO;
+import com.project.ecomapp.service.UserService;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -14,6 +16,14 @@ import java.util.List;
 @RestController
 @RequestMapping("${api.prefix}/users")
 public class UserController {
+
+    private UserService userService;
+    @Autowired
+    public UserController(UserService userService){
+        this.userService = userService;
+    }
+
+
     @PostMapping("/register")
     public ResponseEntity<?> createUser(
             @Valid @RequestBody UserDTO userDTO,
@@ -31,7 +41,8 @@ public class UserController {
                 return ResponseEntity.badRequest().body("password doesn't match");
             }
 
-            return ResponseEntity.status(HttpStatus.OK).body("Register success");
+            userService.createUser(userDTO);
+            return ResponseEntity.status(HttpStatus.OK).body("register successfully");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -40,6 +51,8 @@ public class UserController {
     @PostMapping("/login")
     public ResponseEntity<String> login(
             @Valid @RequestBody UserLoginDTO userLoginDTO) {
+        String token = userService.login(userLoginDTO.getPhoneNumber(), userLoginDTO.getPassword());
+
         return ResponseEntity.ok("token");
 
     }

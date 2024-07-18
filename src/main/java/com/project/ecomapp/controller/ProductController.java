@@ -1,7 +1,12 @@
 package com.project.ecomapp.controller;
 
 import com.project.ecomapp.dto.ProductDTO;
+import com.project.ecomapp.dto.ProductImageDTO;
+import com.project.ecomapp.model.Product;
+import com.project.ecomapp.model.ProductImage;
+import com.project.ecomapp.service.ProductService;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -16,19 +21,21 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @RestController
 @RequestMapping("${api.prefix}/products")
 public class ProductController {
 
-    @PostMapping(value = "", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    private ProductService productService;
+    @Autowired
+    public ProductController(ProductService productService) {
+        this.productService = productService;
+    }
+
+    @PostMapping(value = "")
     public ResponseEntity<?> createProduct(
-            @Valid @ModelAttribute ProductDTO productDTO,
-//            @RequestPart("file") MultipartFile file,
+            @Valid @RequestBody ProductDTO productDTO,
             BindingResult result
     ) {
         try {
@@ -39,8 +46,28 @@ public class ProductController {
                         .toList();
                 return ResponseEntity.badRequest().body(errorMessages);
             }
-            List<MultipartFile> files = productDTO.getFiles();
+
+            Product newProduct = productService.createProduct(productDTO);
+
+            return ResponseEntity.ok(newProduct);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping(value = "uploads/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadImages(
+            @PathVariable("id") Long productId,
+            @ModelAttribute("files") List<MultipartFile> files
+    ){
+        try {
+            Product existingProduct = productService.getProductById(productId);
             files = files == null ? new ArrayList<MultipartFile>() : files;
+            if(files.size() > ProductImage.MAXIMUM_IMAGES_PER_PRODUCT) {
+                return ResponseEntity.badRequest().body("you can only upload 5 images");
+            }
+
+            List<ProductImage> productImages = new ArrayList<>();
             for(MultipartFile file: files){
                 // check file's size
                 if(file.getSize() == 0) {
@@ -55,24 +82,34 @@ public class ProductController {
                     return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
                             .body("File must be an image");
                 }
-
+                // save thumbnail in DTO
                 String filename = storeFile(file);
-
+                // save product image in DB
+                ProductImage productImage = productService.createProductImage(
+                        existingProduct.getId(),
+                        ProductImageDTO.builder()
+                                .imageUrl(filename)
+                                .build()
+                );
+                productImages.add(productImage);
             }
-
-            return ResponseEntity.ok("Product created ");
+            return ResponseEntity.ok().body(productImages);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+
     }
 
     private String storeFile(MultipartFile file) throws IOException {
-        String filename = StringUtils.cleanPath(file.getOriginalFilename());
-        // add an unique UUID before file name
+        if(!isImageFile(file) || file.getOriginalFilename() == null){
+            throw new IOException("Invalid image file format");
+        }
+        String filename = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
+        // add a unique UUID before file name
         String uniqueFilename = UUID.randomUUID().toString() + "_" + filename;
         // Path to save folder
         java.nio.file.Path uploadDir = Paths.get("uploads");
-        // Check and create if folder doesn't exists
+        // Check and create if folder doesn't exist
         if(!Files.exists(uploadDir)){
             Files.createDirectories(uploadDir);
         }
@@ -82,6 +119,11 @@ public class ProductController {
         Files.copy(file.getInputStream(), destination, StandardCopyOption.REPLACE_EXISTING);
         return uniqueFilename;
     }
+    private boolean isImageFile(MultipartFile file) {
+        String contentType = file.getContentType();
+        return contentType != null && contentType.startsWith("image/");
+    }
+
 
     @GetMapping("")
     public ResponseEntity<String> getProducts(
