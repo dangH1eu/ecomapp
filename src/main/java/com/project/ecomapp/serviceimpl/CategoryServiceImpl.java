@@ -4,6 +4,7 @@ import com.project.ecomapp.dto.CategoryDTO;
 import com.project.ecomapp.model.Category;
 import com.project.ecomapp.repository.CategoryRepository;
 import com.project.ecomapp.service.CategoryService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -14,6 +15,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     private final CategoryRepository categoryRepository;
 
+    @Autowired
     public CategoryServiceImpl(CategoryRepository categoryRepository){
         this.categoryRepository = categoryRepository;
     }
