@@ -10,6 +10,7 @@ import com.project.ecomapp.model.ProductImage;
 import com.project.ecomapp.repository.CategoryRepository;
 import com.project.ecomapp.repository.ProductImageRepository;
 import com.project.ecomapp.repository.ProductRepository;
+import com.project.ecomapp.response.ProductResponse;
 import com.project.ecomapp.service.ProductService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,9 +21,9 @@ import java.util.Optional;
 @Service
 public class ProductServiceImpl implements ProductService {
 
-    private ProductRepository productRepository;
-    private CategoryRepository categoryRepository;
-    private ProductImageRepository productImageRepository;
+    private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
+    private final ProductImageRepository productImageRepository;
 
 
     public ProductServiceImpl(ProductRepository productRepository,
@@ -45,6 +46,7 @@ public class ProductServiceImpl implements ProductService {
                 .name(productDTO.getName())
                 .price(productDTO.getPrice())
                 .thumbnail(productDTO.getThumbnail())
+                .description(productDTO.getDescription())
                 .category(existingCategory)
                 .build();
         return productRepository.save(newProduct);
@@ -58,9 +60,11 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Page<Product> getAllProducts(PageRequest pageRequest) {
+    public Page<ProductResponse> getAllProducts(PageRequest pageRequest) {
         // get products list by page and limit
-        return productRepository.findAll(pageRequest);
+        return productRepository
+                .findAll(pageRequest)
+                .map(product -> ProductResponse.fromProduct(product));
 
     }
 
@@ -89,10 +93,12 @@ public class ProductServiceImpl implements ProductService {
         Optional<Product> optionalProduct = productRepository.findById(id);
         optionalProduct.ifPresent(productRepository::delete);
     }
+
     @Override
     public boolean existsByName(String name) {
         return productRepository.existsByName(name);
     }
+
     @Override
     public ProductImage createProductImage(
             Long productId,
@@ -107,10 +113,10 @@ public class ProductServiceImpl implements ProductService {
                 .imageUrl(productImageDTO.getImageUrl())
                 .build();
         int size = productImageRepository.findByProductId(productId).size();
-        if(size >= ProductImage.MAXIMUM_IMAGES_PER_PRODUCT) {
+        if (size >= ProductImage.MAXIMUM_IMAGES_PER_PRODUCT) {
             throw new InvalidParameterException(
                     "number of images must be <= "
-            + ProductImage.MAXIMUM_IMAGES_PER_PRODUCT);
+                            + ProductImage.MAXIMUM_IMAGES_PER_PRODUCT);
         }
         return productImageRepository.save(newProductImage);
 
