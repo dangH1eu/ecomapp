@@ -3,6 +3,7 @@ package com.project.ecomapp.serviceimpl;
 import com.project.ecomapp.component.JwtTokenUtil;
 import com.project.ecomapp.dto.UserDTO;
 import com.project.ecomapp.exception.DataNotFoundException;
+import com.project.ecomapp.exception.PermissionDenyException;
 import com.project.ecomapp.model.Role;
 import com.project.ecomapp.model.User;
 import com.project.ecomapp.repository.RoleRepository;
@@ -39,12 +40,19 @@ public class UserServiceImpl implements UserService {
         this.authenticationManager = authenticationManager;
     }
     @Override
-    public User createUser(UserDTO userDTO) throws DataNotFoundException {
+    public User createUser(UserDTO userDTO) throws Exception {
         String phoneNumber = userDTO.getPhoneNumber();
         // check if phone number already exists
         if(userRepository.existsByPhoneNumber(phoneNumber)){
             throw new DataIntegrityViolationException("phone number already exists");
         }
+        Role role = roleRepository.findById(userDTO.getRoleId())
+                .orElseThrow(() -> new DataNotFoundException("role not found"));
+        if(role.getName().toUpperCase().equals(Role.ADMIN)){
+            throw new PermissionDenyException("cannot register an admin account");
+
+        }
+
 
         // convert from userDTO to user
         User newUser = User.builder()
@@ -56,8 +64,6 @@ public class UserServiceImpl implements UserService {
                 .facebookAccountId(userDTO.getFacebookAccountId())
                 .googleAccountId(userDTO.getGoogleAccountId())
                 .build();
-        Role role = roleRepository.findById(userDTO.getRoleId())
-                .orElseThrow(() -> new DataNotFoundException("role not found"));
 
         newUser.setRole(role);
         // if user has accountId, password is not required
