@@ -1,6 +1,7 @@
 package com.project.ecomapp.serviceimpl;
 
 import com.project.ecomapp.component.JwtTokenUtil;
+import com.project.ecomapp.component.LocalizationUtil;
 import com.project.ecomapp.dto.UserDTO;
 import com.project.ecomapp.exception.DataNotFoundException;
 import com.project.ecomapp.exception.PermissionDenyException;
@@ -9,6 +10,7 @@ import com.project.ecomapp.model.User;
 import com.project.ecomapp.repository.RoleRepository;
 import com.project.ecomapp.repository.UserRepository;
 import com.project.ecomapp.service.UserService;
+import com.project.ecomapp.util.MessageKey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,17 +29,19 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenUtil jwtTokenUtil;
     private final AuthenticationManager authenticationManager;
+    private final LocalizationUtil localizationUtil;
 
 
     @Autowired
     public UserServiceImpl(UserRepository userRepository, RoleRepository roleRepository,
                            PasswordEncoder passwordEncoder, JwtTokenUtil jwtTokenUtil,
-                           AuthenticationManager authenticationManager){
+                           AuthenticationManager authenticationManager, LocalizationUtil localizationUtil){
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenUtil = jwtTokenUtil;
         this.authenticationManager = authenticationManager;
+        this.localizationUtil = localizationUtil;
     }
     @Override
     public User createUser(UserDTO userDTO) throws Exception {
@@ -76,19 +80,27 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public String login(String phoneNumber, String password) throws Exception {
+    public String login(String phoneNumber, String password, Long roleId) throws Exception {
         Optional<User> optionalUser = userRepository.findByPhoneNumber(phoneNumber);
         if(optionalUser.isEmpty()){
-            throw new DataNotFoundException("invalid phonenumber or password");
+            throw new DataNotFoundException(localizationUtil.getLocalizedMessage(MessageKey.WRONG_PHONE_PASSWORD));
         }
 //        return optionalUser.get();
         User existingUser = optionalUser.get();
         // check password
         if(existingUser.getFacebookAccountId() == 0 && existingUser.getGoogleAccountId() == 0){
             if(!passwordEncoder.matches(password, existingUser.getPassword())){
-                throw new BadCredentialsException("wrong phone number or password");
+                throw new BadCredentialsException(localizationUtil.getLocalizedMessage(MessageKey.WRONG_PHONE_PASSWORD));
             }
         }
+        Optional<Role> optionalRole = roleRepository.findById(roleId);
+        if(optionalRole.isEmpty() || !roleId.equals(existingUser.getRole().getId())){
+            throw new DataNotFoundException(localizationUtil.getLocalizedMessage(MessageKey.ROLE_DOES_NOT_EXISTS));
+        }
+        if(!optionalUser.get().isActive()){
+            throw new DataNotFoundException(localizationUtil.getLocalizedMessage(MessageKey.USER_IS_LOCKED));
+        }
+
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                 phoneNumber, password,
                 existingUser.getAuthorities()
