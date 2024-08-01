@@ -15,6 +15,7 @@ import com.project.ecomapp.service.ProductService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -35,6 +36,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
     public Product createProduct(ProductDTO productDTO) throws DataNotFoundException {
 
         Category existingCategory = categoryRepository
@@ -60,15 +62,19 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Page<ProductResponse> getAllProducts(PageRequest pageRequest) {
+    public Page<ProductResponse> getAllProducts(
+            String keyword,
+            Long categoryId,
+            PageRequest pageRequest
+    ) {
         // get products list by page and limit
-        return productRepository
-                .findAll(pageRequest)
-                .map(product -> ProductResponse.fromProduct(product));
+        Page<Product> productsPage = productRepository.searchProducts(categoryId, keyword, pageRequest);
+        return productsPage.map(product -> ProductResponse.fromProduct(product));
 
     }
 
     @Override
+    @Transactional
     public Product updateProduct(Long id, ProductDTO productDTO) throws Exception {
         Product existingProduct = getProductById(id);
         if (existingProduct != null) {
@@ -89,6 +95,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
     public void deleteProduct(Long id) {
         Optional<Product> optionalProduct = productRepository.findById(id);
         optionalProduct.ifPresent(productRepository::delete);
@@ -100,6 +107,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
     public ProductImage createProductImage(
             Long productId,
             ProductImageDTO productImageDTO) throws Exception {
