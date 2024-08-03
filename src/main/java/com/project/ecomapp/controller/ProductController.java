@@ -1,6 +1,7 @@
 package com.project.ecomapp.controller;
 
 import com.github.javafaker.Faker;
+import com.project.ecomapp.component.LocalizationUtil;
 import com.project.ecomapp.dto.ProductDTO;
 import com.project.ecomapp.dto.ProductImageDTO;
 import com.project.ecomapp.model.Product;
@@ -8,6 +9,7 @@ import com.project.ecomapp.model.ProductImage;
 import com.project.ecomapp.response.ProductListResponse;
 import com.project.ecomapp.response.ProductResponse;
 import com.project.ecomapp.service.ProductService;
+import com.project.ecomapp.util.MessageKey;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.UrlResource;
@@ -29,16 +31,19 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("${api.prefix}/products")
 public class ProductController {
 
-    private ProductService productService;
+    private final ProductService productService;
+    private final LocalizationUtil localizationUtil;
 
     @Autowired
-    public ProductController(ProductService productService) {
+    public ProductController(ProductService productService, LocalizationUtil localizationUtil) {
         this.productService = productService;
+        this.localizationUtil = localizationUtil;
     }
 
     @PostMapping(value = "")
@@ -72,7 +77,8 @@ public class ProductController {
             Product existingProduct = productService.getProductById(productId);
             files = files == null ? new ArrayList<MultipartFile>() : files;
             if (files.size() > ProductImage.MAXIMUM_IMAGES_PER_PRODUCT) {
-                return ResponseEntity.badRequest().body("you can only upload 5 images");
+                return ResponseEntity.badRequest().body(localizationUtil
+                        .getLocalizedMessage(MessageKey.UPLOAD_IMAGES_MAX_5));
             }
 
             List<ProductImage> productImages = new ArrayList<>();
@@ -83,12 +89,13 @@ public class ProductController {
                 }
                 if (file.getSize() > 10 * 1024 * 1024) {
                     return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
-                            .body("File is too large! Maximum size is 10MB");
+                            .body(localizationUtil
+                                    .getLocalizedMessage(MessageKey.UPLOAD_IMAGES_FILE_LARGE));
                 }
                 String contentType = file.getContentType();
                 if (contentType == null || !contentType.startsWith("image/")) {
                     return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                            .body("File must be an image");
+                            .body(localizationUtil.getLocalizedMessage(MessageKey.UPLOAD_IMAGES_FILE_MUST_BE_IMAGE));
                 }
                 // save thumbnail in DTO
                 String filename = storeFile(file);
@@ -189,6 +196,21 @@ public class ProductController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @GetMapping("/by-ids")
+    public ResponseEntity<?> getProductsByIds(@RequestParam("ids") String ids){
+        try{
+            List<Long> productIds = Arrays.stream(ids.split(","))
+                    .map(id -> Long.parseLong(id))
+                    .collect(Collectors.toList());
+            List<Product> products = productService.findProductsByIds(productIds);
+            return ResponseEntity.ok(products);
+        }
+        catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteProduct(@PathVariable Long id) {

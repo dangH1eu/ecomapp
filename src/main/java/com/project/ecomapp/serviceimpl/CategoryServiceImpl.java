@@ -6,6 +6,7 @@ import com.project.ecomapp.repository.CategoryRepository;
 import com.project.ecomapp.service.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class CategoryServiceImpl implements CategoryService {
         this.categoryRepository = categoryRepository;
     }
     @Override
+    @Transactional
     public Category createCategory(CategoryDTO categoryDTO) {
         Category newCategory = Category.builder()
                 .name(categoryDTO.getName())
@@ -39,6 +41,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @Transactional
     public Category updateCategory(Long categoryId, CategoryDTO categoryDTO) {
         Category existingCategory = getCategoryById(categoryId);
         existingCategory.setName(categoryDTO.getName());
@@ -47,6 +50,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @Transactional
     public void deleteCategory(Long id) {
         categoryRepository.deleteById(id);
     }

@@ -11,6 +11,7 @@ import com.project.ecomapp.repository.ProductRepository;
 import com.project.ecomapp.service.OrderDetailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -29,6 +30,7 @@ public class OrderDetailServiceImpl implements OrderDetailService {
     }
 
     @Override
+    @Transactional
     public OrderDetail createOrderDetail(OrderDetailDTO orderDetailDTO) throws Exception{
         // check if order id exist
         Order order = orderRepository.findById(orderDetailDTO.getOrderId())
@@ -58,6 +60,7 @@ public class OrderDetailServiceImpl implements OrderDetailService {
     }
 
     @Override
+    @Transactional
     public OrderDetail updateOrderDetail(Long id, OrderDetailDTO orderDetailDTO) throws DataNotFoundException {
         // check if order detail exist
         OrderDetail existingOrderDetail = orderDetailRepository.findById(id)
@@ -76,6 +79,7 @@ public class OrderDetailServiceImpl implements OrderDetailService {
     }
 
     @Override
+    @Transactional
     public void deleteById(Long id) {
         orderDetailRepository.deleteById(id);
 

@@ -1,19 +1,22 @@
 package com.project.ecomapp.serviceimpl;
 
+import com.project.ecomapp.dto.CartItemDTO;
 import com.project.ecomapp.dto.OrderDTO;
 import com.project.ecomapp.exception.DataNotFoundException;
-import com.project.ecomapp.model.Order;
-import com.project.ecomapp.model.OrderStatus;
-import com.project.ecomapp.model.User;
+import com.project.ecomapp.model.*;
+import com.project.ecomapp.repository.OrderDetailRepository;
 import com.project.ecomapp.repository.OrderRepository;
+import com.project.ecomapp.repository.ProductRepository;
 import com.project.ecomapp.repository.UserRepository;
 import com.project.ecomapp.service.OrderService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -25,15 +28,20 @@ public class OrderServiceImpl implements OrderService {
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
     private final ModelMapper modelMapper;
+    private final ProductRepository productRepository;
+    private final OrderDetailRepository orderDetailRepository;
 
     @Autowired
-    public OrderServiceImpl(UserRepository userRepository, OrderRepository orderRepository, ModelMapper modelMapper) {
+    public OrderServiceImpl(UserRepository userRepository, OrderRepository orderRepository, ModelMapper modelMapper, ProductRepository productRepository, OrderDetailRepository orderDetailRepository) {
         this.userRepository = userRepository;
         this.orderRepository = orderRepository;
         this.modelMapper = modelMapper;
+        this.productRepository = productRepository;
+        this.orderDetailRepository = orderDetailRepository;
     }
 
     @Override
+    @Transactional
     public Order createOrder(OrderDTO orderDTO) throws Exception {
         // check user id
         User user = userRepository
@@ -57,6 +65,33 @@ public class OrderServiceImpl implements OrderService {
         order.setShippingDate(shippingDate);
         order.setActive(true);
         orderRepository.save(order);
+
+        // create list of orderDetails from cartItems
+        List<OrderDetail> orderDetails = new ArrayList<>();
+        for(CartItemDTO cartItemDTO : orderDTO.getCartItems()){
+            // create orderDetail from CartItemDTO
+            OrderDetail orderDetail = new OrderDetail();
+            orderDetail.setOrder(order);
+
+            // get product info from cartItemDTO
+            Long productId = cartItemDTO.getProductId();
+            int quantity = cartItemDTO.getQuantity();
+
+            Product product = productRepository.findById(productId)
+                    .orElseThrow(() -> new DataNotFoundException("cannot find product with id: " + productId));
+
+
+            // add info to orderDetail
+            orderDetail.setProduct(product);
+            orderDetail.setNumberOfProducts(quantity);
+
+            orderDetail.setPrice(product.getPrice());
+
+            // add orderDetail to list
+            orderDetails.add(orderDetail);
+        }
+        // save list of orderDetails to db
+        orderDetailRepository.saveAll(orderDetails);
         return order;
     }
 
@@ -66,6 +101,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional
     public Order updateOrder(Long id, OrderDTO orderDTO) throws Exception {
         Order order = orderRepository.findById(id).orElseThrow(() ->
                 new DataNotFoundException("cannot find order with id: " + id));
@@ -79,6 +115,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional
     public void deleteOrder(Long id) {
         Order order = orderRepository.findById(id).orElse(null);
         if(order != null) {

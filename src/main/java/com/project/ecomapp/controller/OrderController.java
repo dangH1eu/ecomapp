@@ -1,8 +1,10 @@
 package com.project.ecomapp.controller;
 
+import com.project.ecomapp.component.LocalizationUtil;
 import com.project.ecomapp.dto.OrderDTO;
 import com.project.ecomapp.model.Order;
 import com.project.ecomapp.service.OrderService;
+import com.project.ecomapp.util.MessageKey;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,10 +19,12 @@ import java.util.List;
 public class OrderController {
 
     private final OrderService orderService;
+    private final LocalizationUtil localizationUtils;
 
     @Autowired
-    public OrderController(OrderService orderService) {
+    public OrderController(OrderService orderService, LocalizationUtil localizationUtils) {
         this.orderService = orderService;
+        this.localizationUtils = localizationUtils;
     }
 
 
@@ -86,7 +90,8 @@ public class OrderController {
             @Valid @PathVariable Long id
     ){
         orderService.deleteOrder(id);
-        return ResponseEntity.ok("delete order success");
+        return ResponseEntity.ok(localizationUtils
+                .getLocalizedMessage(MessageKey.DELETE_ORDER_SUCCESSFULLY));
     }
 
 
