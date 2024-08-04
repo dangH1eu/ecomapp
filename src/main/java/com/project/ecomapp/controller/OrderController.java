@@ -3,10 +3,12 @@ package com.project.ecomapp.controller;
 import com.project.ecomapp.component.LocalizationUtil;
 import com.project.ecomapp.dto.OrderDTO;
 import com.project.ecomapp.model.Order;
+import com.project.ecomapp.response.OrderResponse;
 import com.project.ecomapp.service.OrderService;
 import com.project.ecomapp.util.MessageKey;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
@@ -66,7 +68,8 @@ public class OrderController {
     ){
         try{
             Order existingOrder = orderService.getOrder(orderId);
-            return ResponseEntity.ok(existingOrder);
+            OrderResponse orderResponse = OrderResponse.fromOrder(existingOrder);
+            return ResponseEntity.ok(orderResponse);
         }catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
