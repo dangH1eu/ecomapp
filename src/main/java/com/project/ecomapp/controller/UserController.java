@@ -1,9 +1,11 @@
 package com.project.ecomapp.controller;
 
+import com.project.ecomapp.dto.UpdateUserDTO;
 import com.project.ecomapp.dto.UserDTO;
 import com.project.ecomapp.dto.UserLoginDTO;
 import com.project.ecomapp.model.User;
 import com.project.ecomapp.response.LoginResponse;
+import com.project.ecomapp.response.UserResponse;
 import com.project.ecomapp.service.UserService;
 import com.project.ecomapp.component.LocalizationUtil;
 import com.project.ecomapp.util.MessageKey;
@@ -79,9 +81,39 @@ public class UserController {
                     .build()
             );
         }
-
-
-
     }
+
+    @PostMapping("/details")
+    public ResponseEntity<UserResponse> getUserDetails(@RequestHeader("Authorization") String token) {
+        try{
+            String extractedToken = token.substring(7);
+            User user = userService.getUserDetailsFromToken(extractedToken);
+            return ResponseEntity.ok(UserResponse.fromUser(user));
+        }
+        catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PutMapping("/details/{userId}")
+    public ResponseEntity<UserResponse> updateUserDetails(
+            @PathVariable Long userId,
+            @RequestBody UpdateUserDTO updatedUserDTO,
+            @RequestHeader("Authorization") String authorizationHeader
+    ) {
+        try {
+            String extractedToken = authorizationHeader.substring(7);
+            User user = userService.getUserDetailsFromToken(extractedToken);
+            // Ensure that the user making the request matches the user being updated
+            if (user.getId() != userId) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            User updatedUser = userService.updateUser(userId, updatedUserDTO);
+            return ResponseEntity.ok(UserResponse.fromUser(updatedUser));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
 
 }

@@ -12,7 +12,7 @@ spring:
         ddl-auto: none
       properties:
         hibernate:
-          dialect: org.hibernate.dialect.MySQL8Dialect
+          dialect: org.hibernate.dialect.MySQLDialect
           format_sql: true
   servlet:
     multipart:
@@ -27,3 +27,5 @@ api:
 jwt:
   expiration: 2592000 #30 days
   secretKey: j+Qf9tColF1w33Wp3D9TOj30sfDqDvZYO+b4sn7QiBQ=
+
+#logging.level.org.springframework.security: DEBUG

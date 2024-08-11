@@ -3,13 +3,18 @@ package com.project.ecomapp.controller;
 import com.project.ecomapp.component.LocalizationUtil;
 import com.project.ecomapp.dto.OrderDTO;
 import com.project.ecomapp.model.Order;
+import com.project.ecomapp.response.OrderListResponse;
 import com.project.ecomapp.response.OrderResponse;
 import com.project.ecomapp.service.OrderService;
 import com.project.ecomapp.util.MessageKey;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
@@ -95,6 +100,29 @@ public class OrderController {
         orderService.deleteOrder(id);
         return ResponseEntity.ok(localizationUtils
                 .getLocalizedMessage(MessageKey.DELETE_ORDER_SUCCESSFULLY));
+    }
+
+    @GetMapping("/get-orders-by-keyword")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<OrderListResponse> getOrdersByKeyword(
+            @RequestParam(defaultValue = "", required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        PageRequest pageRequest = PageRequest.of(
+                page, limit,
+                Sort.by("id").ascending()
+        );
+        Page<OrderResponse> orderPage = orderService
+                .getOrdersByKeyword(keyword, pageRequest)
+                .map(OrderResponse::fromOrder);
+        int totalPages = orderPage.getTotalPages();
+        List<OrderResponse> orderResponses = orderPage.getContent();
+        return ResponseEntity.ok(OrderListResponse
+                .builder()
+                .orders(orderResponses)
+                .totalPages(totalPages)
+                .build());
     }
 
 

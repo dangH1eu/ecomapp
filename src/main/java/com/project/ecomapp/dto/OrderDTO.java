@@ -31,7 +31,12 @@ public class OrderDTO {
     @NotBlank(message = "phone number is required")
     @Size(min = 5, message = "phone number must be at least 5 characters")
     private String phoneNumber;
+
+    @JsonProperty("status")
+    private String status;
+
     private String address;
+
     private String note;
 
     @JsonProperty("total_money")

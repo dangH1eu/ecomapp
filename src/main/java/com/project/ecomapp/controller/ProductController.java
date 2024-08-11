@@ -11,6 +11,8 @@ import com.project.ecomapp.response.ProductResponse;
 import com.project.ecomapp.service.ProductService;
 import com.project.ecomapp.util.MessageKey;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
@@ -37,6 +39,7 @@ import java.util.stream.Collectors;
 @RequestMapping("${api.prefix}/products")
 public class ProductController {
 
+//    private static final Logger logger = LoggerFactory.getLogger(ProductController.class);
     private final ProductService productService;
     private final LocalizationUtil localizationUtil;
 
@@ -174,7 +177,8 @@ public class ProductController {
 //                Sort.by("createdAt").descending()
                 Sort.by("id").ascending()
         );
-
+//        logger.info(String.format("keyword = %s, category_id = %d, page = %d, limit = %d",
+//                keyword, categoryId, page, limit));
         Page<ProductResponse> productPage = productService.getAllProducts(keyword, categoryId, pageRequest);
         // get total page
         int totalPages = productPage.getTotalPages();
